@@ -1,0 +1,7 @@
+{
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "biome.enabled": false,
+  "prettier.enable": true
+}

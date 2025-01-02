@@ -1,0 +1,39 @@
+version: "0.2"
+ignorePaths: []
+dictionaryDefinitions: []
+dictionaries: []
+words:
+  - awscli
+  - boto3
+  - botocore
+  - Calibri
+  - colarray
+  - dbconn
+  - dbcur
+  - dbhost
+  - DBNAME
+  - dbpass
+  - DBPASSWORD
+  - dbport
+  - dbuser
+  - dotenv
+  - langchain
+  - langgraph
+  - passw0rd
+  - PGDATABASE
+  - PGHOST
+  - PGPASSWORD
+  - PGPORT
+  - PGUSER
+  - pgvector
+  - psycopg
+  - psycopg2
+  - pypdf2
+  - streamlit
+  - urllib3
+  - userinput
+  - vectorstore
+  - vectorstores
+  - yamatatsu
+ignoreWords: []
+import: []

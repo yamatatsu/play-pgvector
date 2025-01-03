@@ -7,5 +7,5 @@
 
 ## TODO
 - [ ] use chainlit
-- [ ] use other foundation models such as nova
+- [x] use other foundation models such as nova
 - [x] remove unused libraries

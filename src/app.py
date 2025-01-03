@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from htmlTemplates import css
-from langchain_aws import ChatBedrock
+from langchain_aws import ChatBedrockConverse
 from langchain_community.embeddings import BedrockEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_postgres import PGVector
@@ -9,7 +9,6 @@ from langchain.schema import Document
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, MessagesState, StateGraph
 from typing_extensions import List, TypedDict
-import boto3
 import os
 import psycopg2
 import psycopg2.extras
@@ -138,20 +137,21 @@ def handle_userinput(user_question):
 
 def get_embeddings():
     return BedrockEmbeddings(
-        model_id="amazon.titan-embed-text-v2:0", client=BEDROCK_CLIENT
+        model_id="amazon.titan-embed-text-v2:0",
+        region_name="us-east-1",
     )
 
 
 def get_conversation_chain(vectorstore: PGVector):
-    llm = ChatBedrock(
-        model_id="anthropic.claude-3-sonnet-20240229-v1:0",
-        # model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-        # model_id="us.anthropic.claude-3-sonnet-20240229-v1:0",
-        # model_id="amazon.nova-pro-v1:0",
-        client=BEDROCK_CLIENT,
-        # beta_use_converse_api=True,
+    llm = ChatBedrockConverse(
+        # model="anthropic.claude-3-sonnet-20240229-v1:0",
+        # model="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        model="amazon.nova-micro-v1:0",
+        # model="amazon.nova-lite-v1:0",
+        # model="amazon.nova-pro-v1:0",
+        region_name="us-east-1",
+        temperature=0.5,
     )
-    llm.model_kwargs = {"temperature": 0.5, "max_tokens": 8191}
 
     # [ORIGINAL]
     # """Human: You are a helpful assistant that answers questions directly and only using the information provided in the context below.
@@ -174,7 +174,7 @@ def get_conversation_chain(vectorstore: PGVector):
     回答のガイダンス:
         - 常に日本語で回答してください。
         - 回答では常にプロフェッショナルな口調を使用してください。
-        - 回答は常に「提供されたcontextに基づいて解凍します。」で始めてください。
+        - 回答は常に「提供されたcontextに基づいて回答します。」で始めてください。
         - 以下に示す情報から関連する詳細のみを使用して、質問に明確かつ詳細に答えてください。contextに答えが含まれていない場合は、「すみません、よく理解できませんでした。質問を言い換えてください。」と回答してください。
         - できるだけ多くの詳細を箇条書きで提供してください。
         - 常に回答の最後に要約を含めてください。
@@ -255,8 +255,6 @@ limit 5
 
 if __name__ == "__main__":
     load_dotenv()
-
-    BEDROCK_CLIENT = boto3.client("bedrock-runtime", "us-east-1")
 
     db_user = os.getenv("PGUSER")
     db_password = os.getenv("PGPASSWORD")

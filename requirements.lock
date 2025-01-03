@@ -31,8 +31,6 @@ attrs==24.3.0
     # via aiohttp
     # via jsonschema
     # via referencing
-awscli==1.36.30
-    # via play-pgvector
 blinker==1.9.0
     # via streamlit
 boto3==1.35.89
@@ -41,7 +39,6 @@ boto3==1.35.89
 boto3-stubs==1.35.90
     # via play-pgvector
 botocore==1.35.89
-    # via awscli
     # via boto3
     # via play-pgvector
     # via s3transfer
@@ -57,14 +54,10 @@ charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via streamlit
-colorama==0.4.6
-    # via awscli
 dataclasses-json==0.6.7
     # via langchain-community
 distro==1.9.0
     # via anthropic
-docutils==0.16
-    # via awscli
 frozenlist==1.5.0
     # via aiohttp
     # via aiosignal
@@ -190,8 +183,6 @@ psycopg2-binary==2.9.10
     # via play-pgvector
 pyarrow==18.1.0
     # via streamlit
-pyasn1==0.6.1
-    # via rsa
 pydantic==2.10.4
     # via anthropic
     # via langchain
@@ -207,8 +198,6 @@ pydeck==0.9.1
     # via streamlit
 pygments==2.18.0
     # via rich
-pypdf2==3.0.1
-    # via play-pgvector
 python-dateutil==2.9.0.post0
     # via botocore
     # via pandas
@@ -218,7 +207,6 @@ python-dotenv==1.0.1
 pytz==2024.2
     # via pandas
 pyyaml==6.0.2
-    # via awscli
     # via langchain
     # via langchain-community
     # via langchain-core
@@ -238,10 +226,7 @@ rich==13.9.4
 rpds-py==0.22.3
     # via jsonschema
     # via referencing
-rsa==4.7.2
-    # via awscli
 s3transfer==0.10.4
-    # via awscli
     # via boto3
 six==1.17.0
     # via python-dateutil

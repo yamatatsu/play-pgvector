@@ -2,13 +2,14 @@ from dotenv import load_dotenv
 from htmlTemplates import css
 from langchain_aws import ChatBedrockConverse
 from langchain_community.embeddings import BedrockEmbeddings
+from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 from langchain_postgres import PGVector
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, MessagesState, StateGraph
-from typing_extensions import List, TypedDict
 import os
 import psycopg2
 import psycopg2.extras
@@ -111,28 +112,23 @@ def get_movie_docs():
 
 # This function is responsible for processing the user's input question and generating a response from the chatbot
 def handle_userinput(user_question):
-    print(user_question)
-
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
 
     try:
-        response = st.session_state.conversation({"question": user_question})
+        messages = st.session_state.conversation(user_question)
 
     except ValueError:
         st.write("Sorry, I didn't understand that. Could you rephrase your question?")
         print(traceback.format_exc())
         return
 
-    # st.session_state.chat_history = response["chat_history"]
-
-    # for i, message in enumerate(st.session_state.chat_history):
-    #     if i % 2 == 0:
-    #         st.success(message.content, icon="🤔")
-    #     else:
-    #         st.write(message.content)
-    print(response)
-    st.write(response.get("answer"))
+    for i, message in enumerate(messages):
+        message.pretty_print()
+        if isinstance(message, HumanMessage):
+            st.write(message.content)
+        else:
+            st.success(message.content, icon="🤔")
 
 
 def get_embeddings():
@@ -151,6 +147,11 @@ def get_conversation_chain(vectorstore: PGVector):
         # model="amazon.nova-pro-v1:0",
         region_name="us-east-1",
         temperature=0.5,
+    )
+
+    retriever = vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={"k": 3, "include_metadata": True},
     )
 
     # [ORIGINAL]
@@ -191,30 +192,31 @@ def get_conversation_chain(vectorstore: PGVector):
         ]
     )
 
-    class State(TypedDict):
-        question: str
-        context: List[Document]
-        answer: str
+    runnable_chain: RunnableSerializable = (
+        {"context": retriever, "question": RunnablePassthrough()} | qa_prompt | llm
+    )
 
-    # Define application steps
-    def retrieve(state: State):
-        retrieved_docs = vectorstore.similarity_search(state["question"])
-        return {"context": retrieved_docs}
+    def call_model(state: MessagesState):
+        response = runnable_chain.invoke(state["messages"][-1].content)
+        return {"messages": [response]}
 
-    def generate(state: State):
-        docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-        messages = qa_prompt.invoke(
-            {"question": state["question"], "context": docs_content}
+    memory = MemorySaver()
+    app = (
+        StateGraph(MessagesState)
+        .add_edge(START, "model")
+        .add_node("model", call_model)
+        .compile(checkpointer=memory)
+    )
+
+    def invoke(question: str):
+        input_messages = [HumanMessage(question)]
+        output = app.invoke(
+            {"messages": input_messages},
+            config={"configurable": {"thread_id": "abc123"}},
         )
-        response = llm.invoke(messages)
-        return {"answer": response.content}
+        return output["messages"]
 
-    # Compile application and test
-    graph_builder = StateGraph(State).add_sequence([retrieve, generate])
-    graph_builder.add_edge(START, "retrieve")
-    graph = graph_builder.compile()
-
-    return graph.invoke
+    return invoke
 
 
 def get_movies_as_json():

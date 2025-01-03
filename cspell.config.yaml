@@ -7,6 +7,7 @@ words:
   - boto3
   - botocore
   - Calibri
+  - checkpointer
   - colarray
   - dbconn
   - dbcur

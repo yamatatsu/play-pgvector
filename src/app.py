@@ -2,7 +2,7 @@ import chainlit as cl
 from dotenv import load_dotenv
 from langchain_aws import ChatBedrockConverse, BedrockEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
+from langchain_core.runnables import RunnablePassthrough
 from langchain_postgres import PGVector
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document, StrOutputParser
@@ -40,6 +40,7 @@ async def on_chat_start():
         | llm
         | StrOutputParser()
     )
+    # runnable_chain.get_graph().print_ascii()
 
     cl.user_session.set("runnable", runnable_chain)
 
@@ -59,7 +60,7 @@ async def on_message(message: cl.Message):
     await msg.send()
 
 
-def __get_vectorstore(recreate_from: Optional[list[Document]]):
+def __get_vectorstore(recreate_from: Optional[list[Document]] = None):
     embeddings = BedrockEmbeddings(
         model_id="amazon.titan-embed-text-v2:0",
         region_name="us-east-1",
@@ -105,23 +106,22 @@ def __get_qa_prompt():
     # Question: {question}
     #
     # Assistant:"""
-    system_prompt = """Human: あなたは、以下に提供されたコンテキストのみを使用して、質問に直接かつ明確に答える、助けになるアシスタントです。
-    回答のガイダンス:
-        - 常に日本語で回答してください。
-        - 回答では常にプロフェッショナルな口調を使用してください。
-        - 回答は常に「提供されたcontextに基づいて回答します。」で始めてください。
-        - 以下に示す情報から関連する詳細のみを使用して、質問に明確かつ詳細に答えてください。contextに答えが含まれていない場合は、「すみません、よく理解できませんでした。質問を言い換えてください。」と回答してください。
-        - できるだけ多くの詳細を箇条書きで提供してください。
-        - 常に回答の最後に要約を含めてください。
+    system_prompt = """Human: You are a helpful assistant that answers questions directly and only using the information provided in the context below.
+      Guidance for answers:
+          - Always use Japanese as the language in your responses.
+          - In your answers, always use a professional tone.
+          - Begin your answers with "提供されたcontextに基づいて回答します。"
+          - Simply answer the question clearly and with lots of detail using only the relevant details from the information below. If the context does not contain the answer, say "Sorry, I didn't understand that. Could you rephrase your question?"
+          - Use bullet-points and provide as much detail as possible in your answer.
+          - Always provide a summary at the end of your answer.
 
-    次に、以下のコンテキストを読んで、一番下の質問に答えてください。
+      Now read this context below and answer the question at the bottom.
 
-    Context: {context}"""
+      Context: {context}"""
 
     return ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
-            ("placeholder", "{chat_history}"),
             ("human", "{question}"),
         ]
     )

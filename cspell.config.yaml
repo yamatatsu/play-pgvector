@@ -20,6 +20,7 @@ words:
   - dbport
   - dbuser
   - dotenv
+  - grandalf
   - langchain
   - langgraph
   - passw0rd

@@ -1,136 +1,72 @@
+import chainlit as cl
 from dotenv import load_dotenv
-from htmlTemplates import css
 from langchain_aws import ChatBedrockConverse, BedrockEmbeddings
-from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 from langchain_postgres import PGVector
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import START, MessagesState, StateGraph
+from langchain.schema import Document, StrOutputParser
+from langchain.schema.runnable import Runnable, RunnableConfig
+from sqlalchemy.ext.asyncio import create_async_engine
+from typing import cast, Optional
 import os
 import psycopg2
 import psycopg2.extras
-import streamlit as st
-import traceback
 import json
 
 
-# Streamlit components
-def main():
-    # Set the page configuration for the Streamlit application, including the page title and icon.
-    st.set_page_config(
-        page_title="Generative AI Q&A with Amazon Bedrock, Aurora PostgreSQL and pgvector",
-        layout="wide",
-        page_icon=":books::parrot:",
-    )
-    st.write(css, unsafe_allow_html=True)
+load_dotenv()
 
-    logo_url = "static/Powered-By_logo-stack_RGB_REV.png"
-    st.sidebar.image(logo_url, width=150)
-
-    # Check if the conversation and chat history are not present in the session state and initialize them to None.
-    if "conversation" not in st.session_state:
-        vectorstore = PGVector(
-            connection=connection, embeddings=get_embeddings(), use_jsonb=True
-        )
-        st.session_state.vectorstore = vectorstore
-        st.session_state.conversation = get_conversation_chain(vectorstore)
-
-    # A header with the text appears at the top of the Streamlit application.
-    st.header(
-        "Generative AI Q&A with Amazon Bedrock, Aurora PostgreSQL and pgvector :books::parrot:"
-    )
-
-    # Create a text input box where you can ask questions about your documents.
-    user_question = st.text_input(
-        "Ask a question about your documents:", placeholder="What is Amazon Aurora?"
-    )
-
-    # Define a Go button for user action
-    go_button = st.button("Submit", type="secondary")
-
-    # If the go button is pressed or the user enters a question, it calls the handle_userinput() function to process the user's input.
-    if go_button or user_question:
-        with st.spinner("Processing..."):
-            handle_userinput(user_question)
-
-    with st.sidebar:
-        st.subheader("Your documents")
-
-        if st.button("Process"):
-            with st.spinner("Processing"):
-                ids, docs = get_movie_docs()
-
-                vectorstore = PGVector.from_documents(
-                    documents=docs,
-                    embedding=get_embeddings(),
-                    # collection_name="movie.movies",
-                    connection=connection,
-                    pre_delete_collection=True,  # 既存のコレクションを削除する場合
-                )
-
-                st.write(json.dumps(ids))
-                st.session_state.vectorstore = vectorstore
-                st.session_state.conversation = get_conversation_chain(vectorstore)
-
-                st.divider()
-
-                st.success("Successfully!", icon="✅")
-
-    with st.sidebar:
-        st.divider()
+db_user = os.getenv("PGUSER")
+db_password = os.getenv("PGPASSWORD")
+db_host = os.getenv("PGHOST")
+db_port = os.getenv("PGPORT")
+db_name = os.getenv("PGDATABASE")
+connection = (
+    f"postgresql+psycopg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+)
 
 
-def get_movie_docs():
-    dbcur = get_movies_as_json()
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        separators=['",', "]", "}"],
-        chunk_size=1000,
-        chunk_overlap=200,
-        length_function=len,
-    )
-    ids = []
-    docs = []
-    for result in dbcur:
-        movie_dict = result.get("json_build_object")
-        print(movie_dict.get("id"))
-        ids.append(movie_dict.get("id"))
-        docs.append(
-            Document(
-                page_content=json.dumps(movie_dict),
-                metadata=movie_dict,
-            )
-        )
-
-    return ids, text_splitter.split_documents(docs)
+@cl.on_chat_start
+async def on_chat_start():
+    vectorstore = get_vectorstore()
+    cl.user_session.set("runnable", get_conversation_chain(vectorstore))
 
 
-# This function is responsible for processing the user's input question and generating a response from the chatbot
-def handle_userinput(user_question):
-    try:
-        messages = st.session_state.conversation(user_question)
+@cl.on_message
+async def on_message(message: cl.Message):
+    runnable = cast(Runnable, cl.user_session.get("runnable"))  # type: Runnable
 
-    except ValueError:
-        st.write("Sorry, I didn't understand that. Could you rephrase your question?")
-        print(traceback.format_exc())
-        return
+    msg = cl.Message(content="")
 
-    for i, message in enumerate(messages):
-        message.pretty_print()
-        if isinstance(message, HumanMessage):
-            st.write(message.content)
-        else:
-            st.success(message.content, icon="🤔")
+    async for chunk in runnable.astream(
+        message.content,
+        config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),
+    ):
+        await msg.stream_token(chunk)
+
+    await msg.send()
 
 
-def get_embeddings():
-    return BedrockEmbeddings(
+def get_vectorstore(recreate_from: Optional[list[Document]]):
+    embeddings = BedrockEmbeddings(
         model_id="amazon.titan-embed-text-v2:0",
         region_name="us-east-1",
     )
+
+    if recreate_from is None:
+        return PGVector(
+            connection=create_async_engine(connection),
+            embeddings=embeddings,
+            use_jsonb=True,
+        )
+    else:
+        return PGVector.from_documents(
+            documents=recreate_from,
+            embedding=embeddings,
+            connection=connection,
+            pre_delete_collection=True,  # 既存のコレクションを削除する場合
+        )
 
 
 def get_conversation_chain(vectorstore: PGVector):
@@ -188,30 +124,53 @@ def get_conversation_chain(vectorstore: PGVector):
     )
 
     runnable_chain: RunnableSerializable = (
-        {"context": retriever, "question": RunnablePassthrough()} | qa_prompt | llm
+        {"context": retriever, "question": RunnablePassthrough()}
+        | qa_prompt
+        | llm
+        | StrOutputParser()
     )
 
-    def call_model(state: MessagesState):
-        response = runnable_chain.invoke(state["messages"][-1].content)
-        return {"messages": [response]}
+    return runnable_chain
 
-    memory = MemorySaver()
-    app = (
-        StateGraph(MessagesState)
-        .add_edge(START, "model")
-        .add_node("model", call_model)
-        .compile(checkpointer=memory)
+
+# ##############################################
+# refill vectorstore
+# ##############################################
+
+
+def fill_vectorstore():
+    ids, docs = get_movie_docs()
+
+    vectorstore = get_vectorstore(recreate_from=docs)
+
+    cl.user_session.set("runnable", get_conversation_chain(vectorstore))
+
+    print("Successfully!")
+
+
+def get_movie_docs():
+    dbcur = get_movies_as_json()
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        separators=['",', "]", "}"],
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len,
     )
-
-    def invoke(question: str):
-        input_messages = [HumanMessage(question)]
-        output = app.invoke(
-            {"messages": input_messages},
-            config={"configurable": {"thread_id": "abc123"}},
+    ids = []
+    docs = []
+    for result in dbcur:
+        movie_dict = result.get("json_build_object")
+        print(movie_dict.get("id"))
+        ids.append(movie_dict.get("id"))
+        docs.append(
+            Document(
+                page_content=json.dumps(movie_dict),
+                metadata=movie_dict,
+            )
         )
-        return output["messages"]
 
-    return invoke
+    return ids, text_splitter.split_documents(docs)
 
 
 def get_movies_as_json():
@@ -248,18 +207,3 @@ limit 5
         """)
 
         return dbcur
-
-
-if __name__ == "__main__":
-    load_dotenv()
-
-    db_user = os.getenv("PGUSER")
-    db_password = os.getenv("PGPASSWORD")
-    db_host = os.getenv("PGHOST")
-    db_port = os.getenv("PGPORT")
-    db_name = os.getenv("PGDATABASE")
-    connection = (
-        f"postgresql+psycopg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-    )
-
-    main()

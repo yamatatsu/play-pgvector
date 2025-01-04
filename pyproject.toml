@@ -11,6 +11,7 @@ dependencies = [
     "boto3-stubs>=1.35.90",
     "boto3>=1.35.89",
     "botocore>=1.35.89",
+    "chainlit>=1.3.2",
     "langchain-aws<=0.2.1",
     "langchain-community>=0.3.13",
     "langchain-postgres>=0.0.12",
@@ -19,11 +20,13 @@ dependencies = [
     "pgvector<0.3.0",
     "psycopg[binary,pool]>=3.2.3",
     "psycopg2-binary>=2.9.10",
+    # see, https://github.com/Chainlit/chainlit/issues/1544
+    "pydantic<2.10.2",
     "python-dotenv>=1.0.1",
-    "streamlit>=1.41.1",
     "types-psycopg2>=2.9.21.20241019",
     "urllib3>=2.3.0",
     "watchdog>=6.0.0",
+    "greenlet>=3.1.1",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
@@ -33,7 +36,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.rye.scripts]
-play_pgvector = "streamlit run src/app.py"
+play_pgvector = "chainlit run src/app.py -w"
 
 [tool.rye]
 managed = true

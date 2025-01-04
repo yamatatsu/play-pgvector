@@ -10,6 +10,8 @@
 #   universal: false
 
 -e file:.
+aiofiles==23.2.1
+    # via chainlit
 aiohappyeyeballs==2.4.4
     # via aiohttp
 aiohttp==3.11.11
@@ -19,20 +21,24 @@ aiosignal==1.3.2
     # via aiohttp
 altair==5.5.0
     # via play-pgvector
-    # via streamlit
 annotated-types==0.7.0
     # via pydantic
 anthropic==0.42.0
     # via play-pgvector
 anyio==4.7.0
     # via anthropic
+    # via asyncer
     # via httpx
+    # via starlette
+    # via watchfiles
+asyncer==0.0.7
+    # via chainlit
 attrs==24.3.0
     # via aiohttp
     # via jsonschema
     # via referencing
-blinker==1.9.0
-    # via streamlit
+bidict==0.23.1
+    # via python-socketio
 boto3==1.35.89
     # via langchain-aws
     # via play-pgvector
@@ -44,35 +50,55 @@ botocore==1.35.89
     # via s3transfer
 botocore-stubs==1.35.90
     # via boto3-stubs
-cachetools==5.5.0
-    # via streamlit
 certifi==2024.12.14
     # via httpcore
     # via httpx
     # via requests
+chainlit==1.3.2
+    # via play-pgvector
 charset-normalizer==3.4.1
     # via requests
+chevron==0.14.0
+    # via literalai
 click==8.1.8
-    # via streamlit
+    # via chainlit
+    # via uvicorn
 dataclasses-json==0.6.7
+    # via chainlit
     # via langchain-community
+deprecated==1.2.15
+    # via opentelemetry-api
+    # via opentelemetry-exporter-otlp-proto-grpc
+    # via opentelemetry-exporter-otlp-proto-http
+    # via opentelemetry-semantic-conventions
 distro==1.9.0
     # via anthropic
+fastapi==0.115.6
+    # via chainlit
+filetype==1.2.0
+    # via chainlit
 frozenlist==1.5.0
     # via aiohttp
     # via aiosignal
-gitdb==4.0.11
-    # via gitpython
-gitpython==3.1.43
-    # via streamlit
+googleapis-common-protos==1.66.0
+    # via opentelemetry-exporter-otlp-proto-grpc
+    # via opentelemetry-exporter-otlp-proto-http
+greenlet==3.1.1
+    # via play-pgvector
+grpcio==1.68.1
+    # via opentelemetry-exporter-otlp-proto-grpc
 h11==0.14.0
     # via httpcore
+    # via uvicorn
+    # via wsproto
 httpcore==1.0.7
     # via httpx
 httpx==0.28.1
     # via anthropic
+    # via chainlit
     # via langgraph-sdk
     # via langsmith
+    # via literalai
 httpx-sse==0.4.0
     # via langchain-community
 idna==3.10
@@ -80,9 +106,10 @@ idna==3.10
     # via httpx
     # via requests
     # via yarl
+importlib-metadata==8.5.0
+    # via opentelemetry-api
 jinja2==3.1.5
     # via altair
-    # via pydeck
 jiter==0.8.2
     # via anthropic
 jmespath==1.0.1
@@ -125,14 +152,14 @@ langsmith==0.2.6
     # via langchain
     # via langchain-community
     # via langchain-core
-markdown-it-py==3.0.0
-    # via rich
+lazify==0.4.0
+    # via chainlit
+literalai==0.0.623
+    # via chainlit
 markupsafe==3.0.2
     # via jinja2
 marshmallow==3.23.2
     # via dataclasses-json
-mdurl==0.1.2
-    # via markdown-it-py
 msgpack==1.1.0
     # via langgraph-checkpoint
 multidict==6.1.0
@@ -142,35 +169,63 @@ mypy-extensions==1.0.0
     # via typing-inspect
 narwhals==1.19.1
     # via altair
+nest-asyncio==1.6.0
+    # via chainlit
 numpy==1.26.4
+    # via chainlit
     # via langchain
     # via langchain-aws
     # via langchain-community
     # via langchain-postgres
-    # via pandas
     # via pgvector
-    # via pydeck
-    # via streamlit
+opentelemetry-api==1.28.2
+    # via opentelemetry-exporter-otlp-proto-grpc
+    # via opentelemetry-exporter-otlp-proto-http
+    # via opentelemetry-instrumentation
+    # via opentelemetry-sdk
+    # via opentelemetry-semantic-conventions
+    # via uptrace
+opentelemetry-exporter-otlp==1.28.2
+    # via uptrace
+opentelemetry-exporter-otlp-proto-common==1.28.2
+    # via opentelemetry-exporter-otlp-proto-grpc
+    # via opentelemetry-exporter-otlp-proto-http
+opentelemetry-exporter-otlp-proto-grpc==1.28.2
+    # via opentelemetry-exporter-otlp
+opentelemetry-exporter-otlp-proto-http==1.28.2
+    # via opentelemetry-exporter-otlp
+opentelemetry-instrumentation==0.49b2
+    # via uptrace
+opentelemetry-proto==1.28.2
+    # via opentelemetry-exporter-otlp-proto-common
+    # via opentelemetry-exporter-otlp-proto-grpc
+    # via opentelemetry-exporter-otlp-proto-http
+opentelemetry-sdk==1.28.2
+    # via opentelemetry-exporter-otlp-proto-grpc
+    # via opentelemetry-exporter-otlp-proto-http
+    # via uptrace
+opentelemetry-semantic-conventions==0.49b2
+    # via opentelemetry-instrumentation
+    # via opentelemetry-sdk
 orjson==3.10.12
     # via langgraph-sdk
     # via langsmith
-packaging==24.2
+packaging==23.2
     # via altair
+    # via chainlit
     # via langchain-core
+    # via literalai
     # via marshmallow
-    # via streamlit
-pandas==2.2.3
-    # via streamlit
+    # via opentelemetry-instrumentation
 pgvector==0.2.5
     # via langchain-postgres
     # via play-pgvector
-pillow==11.0.0
-    # via streamlit
 propcache==0.2.1
     # via aiohttp
     # via yarl
 protobuf==5.29.2
-    # via streamlit
+    # via googleapis-common-protos
+    # via opentelemetry-proto
 psycopg==3.2.3
     # via langchain-postgres
     # via play-pgvector
@@ -181,31 +236,35 @@ psycopg-pool==3.2.4
     # via psycopg
 psycopg2-binary==2.9.10
     # via play-pgvector
-pyarrow==18.1.0
-    # via streamlit
-pydantic==2.10.4
+pydantic==2.10.1
     # via anthropic
+    # via chainlit
+    # via fastapi
     # via langchain
     # via langchain-aws
     # via langchain-core
     # via langsmith
+    # via literalai
+    # via play-pgvector
     # via pydantic-settings
-pydantic-core==2.27.2
+pydantic-core==2.27.1
     # via pydantic
 pydantic-settings==2.7.0
     # via langchain-community
-pydeck==0.9.1
-    # via streamlit
-pygments==2.18.0
-    # via rich
+pyjwt==2.10.1
+    # via chainlit
 python-dateutil==2.9.0.post0
     # via botocore
-    # via pandas
 python-dotenv==1.0.1
+    # via chainlit
     # via play-pgvector
     # via pydantic-settings
-pytz==2024.2
-    # via pandas
+python-engineio==4.11.2
+    # via python-socketio
+python-multipart==0.0.9
+    # via chainlit
+python-socketio==5.12.1
+    # via chainlit
 pyyaml==6.0.2
     # via langchain
     # via langchain-community
@@ -217,21 +276,19 @@ requests==2.32.3
     # via langchain
     # via langchain-community
     # via langsmith
+    # via opentelemetry-exporter-otlp-proto-http
     # via requests-toolbelt
-    # via streamlit
 requests-toolbelt==1.0.0
     # via langsmith
-rich==13.9.4
-    # via streamlit
 rpds-py==0.22.3
     # via jsonschema
     # via referencing
 s3transfer==0.10.4
     # via boto3
+simple-websocket==1.1.0
+    # via python-engineio
 six==1.17.0
     # via python-dateutil
-smmap==5.0.1
-    # via gitdb
 sniffio==1.3.1
     # via anthropic
     # via anyio
@@ -239,17 +296,17 @@ sqlalchemy==2.0.36
     # via langchain
     # via langchain-community
     # via langchain-postgres
-streamlit==1.41.1
-    # via play-pgvector
+starlette==0.41.3
+    # via chainlit
+    # via fastapi
+syncer==2.0.3
+    # via chainlit
 tenacity==9.0.0
     # via langchain
     # via langchain-community
     # via langchain-core
-    # via streamlit
-toml==0.10.2
-    # via streamlit
-tornado==6.4.2
-    # via streamlit
+tomli==2.2.1
+    # via chainlit
 types-awscrt==0.23.6
     # via botocore-stubs
 types-psycopg2==2.9.21.20241019
@@ -260,23 +317,35 @@ typing-extensions==4.12.2
     # via altair
     # via anthropic
     # via anyio
+    # via fastapi
     # via langchain-core
+    # via opentelemetry-sdk
     # via psycopg
     # via psycopg-pool
     # via pydantic
     # via pydantic-core
     # via sqlalchemy
-    # via streamlit
     # via typing-inspect
 typing-inspect==0.9.0
     # via dataclasses-json
-tzdata==2024.2
-    # via pandas
+uptrace==1.28.2
+    # via chainlit
 urllib3==2.3.0
     # via botocore
     # via play-pgvector
     # via requests
+uvicorn==0.25.0
+    # via chainlit
 watchdog==6.0.0
     # via play-pgvector
+watchfiles==0.20.0
+    # via chainlit
+wrapt==1.17.0
+    # via deprecated
+    # via opentelemetry-instrumentation
+wsproto==1.2.0
+    # via simple-websocket
 yarl==1.18.3
     # via aiohttp
+zipp==3.21.0
+    # via importlib-metadata

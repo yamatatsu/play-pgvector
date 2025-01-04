@@ -3,10 +3,12 @@ ignorePaths: []
 dictionaryDefinitions: []
 dictionaries: []
 words:
+  - astream
   - awscli
   - boto3
   - botocore
   - Calibri
+  - chainlit
   - checkpointer
   - colarray
   - dbconn
@@ -29,6 +31,7 @@ words:
   - pgvector
   - psycopg
   - psycopg2
+  - pydantic
   - pypdf2
   - streamlit
   - urllib3

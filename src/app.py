@@ -29,13 +29,24 @@ connection = (
 
 @cl.on_chat_start
 async def on_chat_start():
-    vectorstore = get_vectorstore()
-    cl.user_session.set("runnable", get_conversation_chain(vectorstore))
+    vectorstore = __get_vectorstore()
+    retriever = __get_retriever(vectorstore)
+    qa_prompt = __get_qa_prompt()
+    llm = __get_llm()
+
+    runnable_chain = (
+        {"context": retriever, "question": RunnablePassthrough()}
+        | qa_prompt
+        | llm
+        | StrOutputParser()
+    )
+
+    cl.user_session.set("runnable", runnable_chain)
 
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    runnable = cast(Runnable, cl.user_session.get("runnable"))  # type: Runnable
+    runnable = cast(Runnable, cl.user_session.get("runnable"))
 
     msg = cl.Message(content="")
 
@@ -48,7 +59,7 @@ async def on_message(message: cl.Message):
     await msg.send()
 
 
-def get_vectorstore(recreate_from: Optional[list[Document]]):
+def __get_vectorstore(recreate_from: Optional[list[Document]]):
     embeddings = BedrockEmbeddings(
         model_id="amazon.titan-embed-text-v2:0",
         region_name="us-east-1",
@@ -69,22 +80,14 @@ def get_vectorstore(recreate_from: Optional[list[Document]]):
         )
 
 
-def get_conversation_chain(vectorstore: PGVector):
-    llm = ChatBedrockConverse(
-        # model="anthropic.claude-3-sonnet-20240229-v1:0",
-        # model="anthropic.claude-3-5-sonnet-20241022-v2:0",
-        model="amazon.nova-micro-v1:0",
-        # model="amazon.nova-lite-v1:0",
-        # model="amazon.nova-pro-v1:0",
-        region_name="us-east-1",
-        temperature=0.5,
-    )
-
-    retriever = vectorstore.as_retriever(
+def __get_retriever(vectorstore: PGVector):
+    return vectorstore.as_retriever(
         search_type="similarity",
         search_kwargs={"k": 3, "include_metadata": True},
     )
 
+
+def __get_qa_prompt():
     # [ORIGINAL]
     # """Human: You are a helpful assistant that answers questions directly and only using the information provided in the context below.
     # Guidance for answers:
@@ -115,7 +118,7 @@ def get_conversation_chain(vectorstore: PGVector):
 
     Context: {context}"""
 
-    qa_prompt = ChatPromptTemplate.from_messages(
+    return ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
             ("placeholder", "{chat_history}"),
@@ -123,14 +126,17 @@ def get_conversation_chain(vectorstore: PGVector):
         ]
     )
 
-    runnable_chain: RunnableSerializable = (
-        {"context": retriever, "question": RunnablePassthrough()}
-        | qa_prompt
-        | llm
-        | StrOutputParser()
-    )
 
-    return runnable_chain
+def __get_llm():
+    return ChatBedrockConverse(
+        # model="anthropic.claude-3-sonnet-20240229-v1:0",
+        # model="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        model="amazon.nova-micro-v1:0",
+        # model="amazon.nova-lite-v1:0",
+        # model="amazon.nova-pro-v1:0",
+        region_name="us-east-1",
+        temperature=0.5,
+    )
 
 
 # ##############################################
@@ -138,18 +144,16 @@ def get_conversation_chain(vectorstore: PGVector):
 # ##############################################
 
 
-def fill_vectorstore():
-    ids, docs = get_movie_docs()
+def __fill_vectorstore():
+    ids, docs = __get_movie_docs()
 
-    vectorstore = get_vectorstore(recreate_from=docs)
-
-    cl.user_session.set("runnable", get_conversation_chain(vectorstore))
+    vectorstore = __get_vectorstore(recreate_from=docs)
 
     print("Successfully!")
 
 
-def get_movie_docs():
-    dbcur = get_movies_as_json()
+def __get_movie_docs():
+    dbcur = __get_movies_as_json()
 
     text_splitter = RecursiveCharacterTextSplitter(
         separators=['",', "]", "}"],
@@ -173,7 +177,7 @@ def get_movie_docs():
     return ids, text_splitter.split_documents(docs)
 
 
-def get_movies_as_json():
+def __get_movies_as_json():
     with psycopg2.connect(
         database=db_name,
         host=db_host,

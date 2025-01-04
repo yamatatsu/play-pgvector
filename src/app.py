@@ -38,8 +38,6 @@ def main():
         )
         st.session_state.vectorstore = vectorstore
         st.session_state.conversation = get_conversation_chain(vectorstore)
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = None
 
     # A header with the text appears at the top of the Streamlit application.
     st.header(
@@ -112,9 +110,6 @@ def get_movie_docs():
 
 # This function is responsible for processing the user's input question and generating a response from the chatbot
 def handle_userinput(user_question):
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = None
-
     try:
         messages = st.session_state.conversation(user_question)
 

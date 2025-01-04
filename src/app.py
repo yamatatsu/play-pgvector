@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 from htmlTemplates import css
-from langchain_aws import ChatBedrockConverse
-from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import ChatBedrockConverse, BedrockEmbeddings
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
@@ -97,6 +96,7 @@ def get_movie_docs():
     docs = []
     for result in dbcur:
         movie_dict = result.get("json_build_object")
+        print(movie_dict.get("id"))
         ids.append(movie_dict.get("id"))
         docs.append(
             Document(
@@ -244,7 +244,7 @@ left outer join movie.reviews r ON m.id = r.id
 where m.movie_embedding is null
 group by m.id
 limit 5
-;
+-- limit 500;
         """)
 
         return dbcur
